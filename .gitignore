@@ -1,0 +1,10 @@
+*.o
+*.elf
+*.out
+*.d
+*.log
+*.zip
+*.tar
+*.bin
+*.hex
+build/

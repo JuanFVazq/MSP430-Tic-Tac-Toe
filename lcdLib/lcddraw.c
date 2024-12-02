@@ -3,6 +3,8 @@
  */
 #include "lcdutils.h"
 #include "lcddraw.h"
+#include <msp430.h>
+#include <stdint.h>
 
 
 /** Draw single pixel at x,row 
@@ -43,6 +45,7 @@ void fillRectangle(u_char colMin, u_char rowMin, u_char width, u_char height,
  */
 void clearScreen(u_int colorBGR) 
 {
+
   u_char w = screenWidth;
   u_char h = screenHeight;
   fillRectangle(0, 0, screenWidth, screenHeight, colorBGR);
