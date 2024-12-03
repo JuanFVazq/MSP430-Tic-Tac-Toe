@@ -33,7 +33,6 @@ int checkWin() {
 }
 
 void placePiece(int row, int col) {
-  // Example: Place a piece for the current player
   if (grid[row][col] == ' ') {  // If the cell is empty
     drawMark(row, col, currentPlayer);  // Draw the current player's mark
     grid[row][col] = currentPlayer;    // Update the grid state

@@ -1,0 +1,9 @@
+#ifndef GAME_LOGIC_H
+#define GAME_LOGIC_H
+
+void initGrid();
+int checkWin();
+int checkDraw();
+void playGame();
+
+#endif
