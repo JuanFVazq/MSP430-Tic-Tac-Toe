@@ -6,14 +6,13 @@
 #include <msp430.h>
 #include <stdint.h>
 
-
-/** Draw single pixel at x,row 
+/** Draw single pixel at col,row 
  *
  *  \param col Column to draw to
  *  \param row Row to draw to
  *  \param colorBGR Color of pixel in BGR
  */
-void drawPixel(u_char col, u_char row, u_int colorBGR) 
+void drawPixel(u_char col, u_char row, u_int colorBGR)
 {
   lcd_setArea(col, row, col, row);
   lcd_writeColor(colorBGR);
@@ -27,7 +26,7 @@ void drawPixel(u_char col, u_char row, u_int colorBGR)
  *  \param height height of rectangle
  *  \param colorBGR Color of rectangle in BGR
  */
-void fillRectangle(u_char colMin, u_char rowMin, u_char width, u_char height, 
+void fillRectangle(u_char colMin, u_char rowMin, u_char width, u_char height,
 		   u_int colorBGR)
 {
   u_char colLimit = colMin + width, rowLimit = rowMin + height;
@@ -43,19 +42,21 @@ void fillRectangle(u_char colMin, u_char rowMin, u_char width, u_char height,
  *  
  *  \param colorBGR The color to fill screen
  */
-void clearScreen(u_int colorBGR) 
+void clearScreen(u_int colorBGR)
 {
-
-  u_char w = screenWidth;
-  u_char h = screenHeight;
   fillRectangle(0, 0, screenWidth, screenHeight, colorBGR);
 }
 
-/** 5x7 font - this function draws background pixels
- *  Adapted from RobG's EduKit
+/** Draw character using 5x7 font
+ *
+ *  \param rcol Column to start drawing character
+ *  \param rrow Row to start drawing character
+ *  \param c Character to draw
+ *  \param fgColorBGR Foreground color in BGR
+ *  \param bgColorBGR Background color in BGR
  */
-void drawChar5x7(u_char rcol, u_char rrow, char c, 
-     u_int fgColorBGR, u_int bgColorBGR) 
+void drawChar5x7(u_char rcol, u_char rrow, char c,
+		 u_int fgColorBGR, u_int bgColorBGR)
 {
   u_char col = 0;
   u_char row = 0;
@@ -75,20 +76,16 @@ void drawChar5x7(u_char rcol, u_char rrow, char c,
   }
 }
 
-/** Draw string at col,row
- *  Type:
- *  FONT_SM - small (5x8,) FONT_MD - medium (8x12,) FONT_LG - large (11x16)
- *  FONT_SM_BKG, FONT_MD_BKG, FONT_LG_BKG - as above, but with background color
- *  Adapted from RobG's EduKit
+/** Draw string using 5x7 font
  *
  *  \param col Column to start drawing string
  *  \param row Row to start drawing string
- *  \param string The string
+ *  \param string The string to draw
  *  \param fgColorBGR Foreground color in BGR
  *  \param bgColorBGR Background color in BGR
  */
 void drawString5x7(u_char col, u_char row, char *string,
-		u_int fgColorBGR, u_int bgColorBGR)
+		   u_int fgColorBGR, u_int bgColorBGR)
 {
   u_char cols = col;
   while (*string) {
@@ -96,7 +93,6 @@ void drawString5x7(u_char col, u_char row, char *string,
     cols += 6;
   }
 }
-
 
 /** Draw rectangle outline
  *  
@@ -109,12 +105,63 @@ void drawString5x7(u_char col, u_char row, char *string,
 void drawRectOutline(u_char colMin, u_char rowMin, u_char width, u_char height,
 		     u_int colorBGR)
 {
-  /**< top & bot */
+  /* Top & bottom */
   fillRectangle(colMin, rowMin, width, 1, colorBGR);
-  fillRectangle(colMin, rowMin + height, width, 1, colorBGR);
+  fillRectangle(colMin, rowMin + height - 1, width, 1, colorBGR);
 
-  /**< left & right */
+  /* Left & right */
   fillRectangle(colMin, rowMin, 1, height, colorBGR);
-  fillRectangle(colMin + width, rowMin, 1, height, colorBGR);
+  fillRectangle(colMin + width - 1, rowMin, 1, height, colorBGR);
 }
 
+/** Draw character using 11x16 font
+ *
+ *  \param rcol Column to start drawing character
+ *  \param rrow Row to start drawing character
+ *  \param c Character to draw
+ *  \param fgColorBGR Foreground color in BGR
+ *  \param bgColorBGR Background color in BGR
+ */
+void drawChar11x16(u_char rcol, u_char rrow, char c,
+		   u_int fgColorBGR, u_int bgColorBGR)
+{
+  u_char col = 0;
+  u_char row = 0;
+  u_char oc = c - 0x20;  // Offset for the 11x16 font (starts at ' ')
+
+  // Set drawing area for 11x16 character
+  lcd_setArea(rcol, rrow, rcol + 10, rrow + 15); /* relative to requested col/row */
+
+  while (row < 16) {  // Each row in the character
+    while (col < 11) {  // Each column in the row
+      // Get the correct bit from the font data
+      u_int colorBGR = (font_11x16[oc][col] & (1 << row)) ? fgColorBGR : bgColorBGR;
+      lcd_writeColor(colorBGR);
+      col++;
+    }
+    col = 0;  // Reset column counter for the next row
+    row++;
+  }
+}
+
+/** Draw string at col,row
+ *  Type:
+ *  FONT_SM - small (5x8,) FONT_MD - medium (8x12,) FONT_LG - large (11x16)
+ *  FONT_SM_BKG, FONT_MD_BKG, FONT_LG_BKG - as above, but with background color
+ *  Adapted for 11x16 font size
+ *
+ *  \param col Column to start drawing string
+ *  \param row Row to start drawing string
+ *  \param string The string
+ *  \param fgColorBGR Foreground color in BGR
+ *  \param bgColorBGR Background color in BGR
+ */
+void drawString11x16(u_char col, u_char row, char *string,
+		     u_int fgColorBGR, u_int bgColorBGR)
+{
+  u_char cols = col;
+  while (*string) {
+    drawChar11x16(cols, row, *string++, fgColorBGR, bgColorBGR);
+    cols += 12; // Increment by character width (11) + 1 for spacing
+  }
+}

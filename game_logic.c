@@ -1,23 +1,26 @@
 #include "grid.h"
 #include "game_logic.h"
-#include "lcdLib/lcdutils.h"
-#include "lcdLib/lcddraw.h"
+#include "lcdutils.h"
+#include "lcddraw.h"
+#include "buzzer.h"
 
 #define GRID_SIZE 3
 
-static char grid[GRID_SIZE][GRID_SIZE];
+char grid[GRID_SIZE][GRID_SIZE];
 char currentPlayer = 'X';
 
-// Initialize the game grid
+
+extern volatile int need_draw_mark;
+extern volatile int placed_row, placed_col;
+
 void initGrid() {
   for (int i = 0; i < GRID_SIZE; i++) {
     for (int j = 0; j < GRID_SIZE; j++) {
-      grid[i][j] = ' ';
+      grid[i][j] = 0; 
     }
   }
 }
 
-// Check for a win
 int checkWin() {
   for (int i = 0; i < GRID_SIZE; i++) {
     if (grid[i][0] == currentPlayer && grid[i][1] == currentPlayer && grid[i][2] == currentPlayer)
@@ -32,47 +35,45 @@ int checkWin() {
   return 0;
 }
 
-void placePiece(int row, int col) {
-  if (grid[row][col] == ' ') {  // If the cell is empty
-    drawMark(row, col, currentPlayer);  // Draw the current player's mark
-    grid[row][col] = currentPlayer;    // Update the grid state
-    currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';  // Switch player
-  }
-}
-
-// Check for a draw
 int checkDraw() {
   for (int i = 0; i < GRID_SIZE; i++) {
     for (int j = 0; j < GRID_SIZE; j++) {
-      if (grid[i][j] == ' ')
+      if (grid[i][j] == 0)
 	return 0;
     }
   }
   return 1;
 }
 
-// Main game loop
-void playGame() {
-  int row = 0, col = 0;
-  initGrid();
-  drawGrid();
-
-  while (1) {
-    highlightCell(row, col,COLOR_PINK);
-    // Wait for button press to navigate or select
-    // Simulated input: Update row/col based on navigation buttons
+void placePiece(int row, int col) {
+  if (grid[row][col] == 0) {
     grid[row][col] = currentPlayer;
-    drawMark(row, col, currentPlayer);
+
+    
+    placed_row = row;
+    placed_col = col;
+    need_draw_mark = 1;
+
     if (checkWin()) {
+      
+      buzzer_set_period(1000);
+      __delay_cycles(500000);
+      buzzer_set_period(0);  
+   
       clearScreen(COLOR_BLACK);
-      drawString5x7(20, 20, "WINNER", COLOR_GREEN, COLOR_BLACK);
-      break;
-    }
-    if (checkDraw()) {
+      drawString11x16(20, 50, "WINNER!", COLOR_GREEN, COLOR_BLACK);
+    } else if (checkDraw()) {
+      
+      buzzer_set_period(2000);
+      __delay_cycles(500000);
+      buzzer_set_period(0);  
+
+      
       clearScreen(COLOR_BLACK);
-      drawString5x7(20, 20, "DRAW", COLOR_RED, COLOR_BLACK);
-      break;
+      drawString11x16(30, 50, "DRAW", COLOR_RED, COLOR_BLACK);
+    } else {
+      
+      currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';
     }
-    currentPlayer = (currentPlayer == 'X') ? 'O' : 'X';  // Switch player
   }
 }
